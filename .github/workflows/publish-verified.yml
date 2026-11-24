@@ -1,0 +1,66 @@
+name: Publish NillyQuickSnap v1.1
+on:
+  push:
+    branches: ['release/publish-v1-1']
+    paths: ['.github/workflows/publish-verified.yml']
+permissions:
+  contents: read
+jobs:
+  windows:
+    runs-on: windows-2025
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ce7ea8740d8e4a6912fd68083904d543ead0bbae
+      - name: Verify installation in a new Windows profile
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Stop'
+          & .\Install_NillyQuickSnap.ps1 -Silent
+          if (-not (Test-Path .\NillyQuickSnap.exe -PathType Leaf)) { throw 'Launcher is missing' }
+          $entry = Get-ItemPropertyValue -Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Run' -Name 'NillyQuickSnap'
+          if ($entry.Trim('"') -ne (Resolve-Path .\NillyQuickSnap.exe).Path) { throw 'Incorrect startup entry' }
+          Write-Host 'QUICKSNAP_INSTALL_VERIFIED=True'
+  publish:
+    needs: windows
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ce7ea8740d8e4a6912fd68083904d543ead0bbae
+      - name: Package and publish verified portable release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: 'v1.1'
+          RELEASE_ZIP: 'NillyQuickSnap-v1.1-Portable.zip'
+          RELEASE_NAME: 'NillyQuickSnap v1.1'
+          SOURCE_SHA: 'ce7ea8740d8e4a6912fd68083904d543ead0bbae'
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/nilly-release"
+          out="$RUNNER_TEMP/nilly-release"
+          git archive --format=zip --output="$out/$RELEASE_ZIP" "$SOURCE_SHA" -- LICENSE README.md '*.ico' '*.bat' '*.ps1' desktop
+          unzip -tq "$out/$RELEASE_ZIP"
+          (cd "$out" && sha256sum "$RELEASE_ZIP" > SHA256SUMS.txt)
+          cat "$out/SHA256SUMS.txt"
+          cat > "$out/notes.md" <<'NOTES'
+          ### Ελληνικά
+          Ο installer δημιουργεί την εγγραφή αυτόματης εκκίνησης ακόμη και σε νέο προφίλ Windows. Διορθώνει τη μαζική εγκατάσταση από το NillyHub.
+          Αποσυμπίεσε το ZIP και άνοιξε το `Install_NillyQuickSnap.bat`.
+          
+          ### English
+          The installer now creates the startup registry key when missing on a fresh Windows profile. This also fixes installation through NillyHub.
+          Extract the ZIP and run `Install_NillyQuickSnap.bat`. MIT licensed.
+          NOTES
+          if gh release view "$RELEASE_TAG" --json isDraft --jq .isDraft > "$out/status"; then
+            test "$(cat "$out/status")" = true
+          else
+            gh release create "$RELEASE_TAG" --target "$SOURCE_SHA" --draft --title "$RELEASE_NAME" --notes-file "$out/notes.md"
+          fi
+          gh release upload "$RELEASE_TAG" "$out/$RELEASE_ZIP" "$out/SHA256SUMS.txt" --clobber
+          gh release edit "$RELEASE_TAG" --target "$SOURCE_SHA" --draft=false --latest --title "$RELEASE_NAME" --notes-file "$out/notes.md"
+          gh release view "$RELEASE_TAG" --json isDraft,url,assets
