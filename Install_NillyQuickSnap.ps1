@@ -51,7 +51,9 @@ if ($needBuild) {
 
 # 3. Register the per-user startup entry.
 Write-Host '  [2/4] Ρύθμιση εκκίνησης με τα Windows...' -ForegroundColor Yellow
-Set-ItemProperty -Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Run' -Name 'NillyQuickSnap' -Value "`"$exePath`""
+$runKey = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Run'
+if (-not (Test-Path -LiteralPath $runKey)) { New-Item -Path $runKey -Force | Out-Null }
+Set-ItemProperty -Path $runKey -Name 'NillyQuickSnap' -Value "`"$exePath`""
 Write-Host '        OK -> Αυτόματη εκκίνηση ενεργή.' -ForegroundColor Green
 
 # 4. Desktop & Start Menu Shortcuts
