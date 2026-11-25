@@ -30,8 +30,8 @@ using Microsoft.Win32;
 [assembly: AssemblyProduct("NillyQuickSnap")]
 [assembly: AssemblyCopyright("Copyright (c) 2026 Nilly graphics (Sotiris Christos) — https://nillygraphics.com/")]
 [assembly: AssemblyTrademark("Nilly graphics / Nillygraphics — Sotiris Christos")]
-[assembly: AssemblyVersion("1.0.0.0")]
-[assembly: AssemblyFileVersion("1.0.0.0")]
+[assembly: AssemblyVersion("1.2.0.0")]
+[assembly: AssemblyFileVersion("1.2.0.0")]
 
 namespace NillyQuickSnap
 {
@@ -299,10 +299,27 @@ namespace NillyQuickSnap
             flow.Controls.Add(btnUndo);
             flow.Controls.Add(btnCopy);
             flow.Controls.Add(btnSave);
+
+            int extraW = 0;
+            string viewExe = FindSiblingExe("NillyViewPro", "NillyViewPro.exe");
+            if (viewExe != null)
+            {
+                Button btnView = MakeBtn("↗ View", "Άνοιγμα κατευθείαν στο NillyView Pro (Crop / Eyedropper / WebP)", 66, Color.FromArgb(46, 34, 20), Color.FromArgb(252, 150, 31), delegate { DoSendToSiblingAndClose(viewExe); });
+                flow.Controls.Add(btnView);
+                extraW += 70;
+            }
+            string batchExe = FindSiblingExe("NillyBatchPro", "NillyBatchPro.exe");
+            if (batchExe != null)
+            {
+                Button btnBatch = MakeBtn("↗ Batch", "Άνοιγμα στο NillyBatch Pro (Watermark / Social Resize)", 68, Color.FromArgb(26, 40, 56), Color.FromArgb(102, 217, 239), delegate { DoSendToSiblingAndClose(batchExe); });
+                flow.Controls.Add(btnBatch);
+                extraW += 72;
+            }
+
             flow.Controls.Add(btnEsc);
 
             _toolbar.Controls.Add(flow);
-            _toolbar.Width = 746;
+            _toolbar.Width = 746 + extraW;
             this.Controls.Add(_toolbar);
             UpdateToolbarStyles();
         }
@@ -486,6 +503,55 @@ namespace NillyQuickSnap
                 }
             }
             this.Close();
+        }
+
+        private static string FindSiblingExe(string folder, string exeName)
+        {
+            try
+            {
+                string appData = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), @"NillySuite\" + folder + @"\" + exeName);
+                if (File.Exists(appData)) return appData;
+                DirectoryInfo par = Directory.GetParent(AppDomain.CurrentDomain.BaseDirectory.TrimEnd('\\'));
+                if (par != null)
+                {
+                    string sib = Path.Combine(Path.Combine(par.FullName, folder), exeName);
+                    if (File.Exists(sib)) return sib;
+                }
+            }
+            catch { }
+            return null;
+        }
+
+        private void DoSendToSiblingAndClose(string siblingExe)
+        {
+            if (!_hasSelection) return;
+            string saved = null;
+            using (Bitmap crop = RenderFinalCrop())
+            {
+                if (crop == null) return;
+                LastCapturedSize = crop.Size;
+                try { Clipboard.SetImage(crop); } catch { }
+                try
+                {
+                    saved = SnapPaths.BuildAutoSavePath();
+                    crop.Save(saved, ImageFormat.Png);
+                    LastSavedPath = saved;
+                }
+                catch
+                {
+                    try
+                    {
+                        saved = Path.Combine(Path.GetTempPath(), "NillySnap_" + DateTime.Now.ToString("yyyyMMdd_HHmmss") + ".png");
+                        crop.Save(saved, ImageFormat.Png);
+                    }
+                    catch { }
+                }
+            }
+            this.Close();
+            if (!string.IsNullOrEmpty(saved) && File.Exists(saved))
+            {
+                try { Process.Start(new ProcessStartInfo(siblingExe, "\"" + saved + "\"") { WorkingDirectory = Path.GetDirectoryName(siblingExe), UseShellExecute = true }); } catch { }
+            }
         }
 
         private void DoSaveAsAndClose()
