@@ -30,8 +30,8 @@ using Microsoft.Win32;
 [assembly: AssemblyProduct("NillyQuickSnap")]
 [assembly: AssemblyCopyright("Copyright (c) 2026 Nilly graphics (Sotiris Christos) — https://nillygraphics.com/")]
 [assembly: AssemblyTrademark("Nilly graphics / Nillygraphics — Sotiris Christos")]
-[assembly: AssemblyVersion("1.2.0.0")]
-[assembly: AssemblyFileVersion("1.2.0.0")]
+[assembly: AssemblyVersion("1.2.1.0")]
+[assembly: AssemblyFileVersion("1.2.1.0")]
 
 namespace NillyQuickSnap
 {
@@ -264,7 +264,7 @@ namespace NillyQuickSnap
             AddToolBtn(flow, DrawTool.Rect,      "▢ Πλαίσιο", "Πλαίσιο (R)", 74);
             AddToolBtn(flow, DrawTool.Pen,       "✎ Στυλό",   "Ελεύθερη σχεδίαση (P)", 68);
             AddToolBtn(flow, DrawTool.Highlight, "▮ Marker",  "Μαρκαδόρος (H)", 70);
-            AddToolBtn(flow, DrawTool.Blur,      "▦ Blur",    "Θόλωμα / Απόκρυψη (B)", 60);
+            AddToolBtn(flow, DrawTool.Blur,      "Blur",      "Θόλωμα / Απόκρυψη (B)", 54);
 
             Color[] palette = new Color[]
             {
@@ -293,7 +293,7 @@ namespace NillyQuickSnap
 
             Button btnUndo = MakeBtn("↶ Undo", "Αναίρεση (Ctrl+Z)", 60, Color.FromArgb(28, 36, 51), Color.FromArgb(226, 232, 240), delegate { DoUndo(); });
             Button btnCopy = MakeBtn("✓ OK",   "Αντιγραφή + Αποθήκευση στα Στιγμιότυπα (Enter)", 64, Color.FromArgb(56, 189, 248), Color.FromArgb(7, 34, 53), delegate { DoCopyAutoSaveAndClose(); });
-            Button btnSave = MakeBtn("💾 Save As", "Αποθήκευση αλλού (Ctrl+S)", 74, Color.FromArgb(16, 185, 129), Color.FromArgb(3, 34, 25), delegate { DoSaveAsAndClose(); });
+            Button btnSave = MakeBtn("Save As", "Αποθήκευση αλλού (Ctrl+S)", 68, Color.FromArgb(252, 150, 31), Color.FromArgb(20, 22, 26), delegate { DoSaveAsAndClose(); });
             Button btnEsc  = MakeBtn("✕", "Ακύρωση (Esc)", 30, Color.FromArgb(52, 24, 33), Color.FromArgb(253, 164, 175), delegate { this.Close(); });
 
             flow.Controls.Add(btnUndo);
